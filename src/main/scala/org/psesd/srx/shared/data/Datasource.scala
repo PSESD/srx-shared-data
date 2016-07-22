@@ -5,7 +5,7 @@ import java.sql._
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import org.psesd.srx.shared.core.sif.SifTimestamp
-import org.psesd.srx.shared.data.exceptions.DatasourceException
+import org.psesd.srx.shared.data.exceptions.{DatasourceException, DatasourceStatementException}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -30,11 +30,18 @@ class Datasource(datasourceConfig: DatasourceConfig) {
     try {
       val preparedStatement: PreparedStatement = connection.prepareStatement(statement.sql)
       setParameters(preparedStatement, statement.parameters)
-      val result: Int = preparedStatement.executeUpdate
-      result match {
-        case 1 => new DatasourceResult(true, List[DatasourceRow]())
-        case _ => new DatasourceResult(false, List[DatasourceRow]())
+      var result: Int = 0
+      val exceptions = ArrayBuffer[Exception]()
+      try {
+        result = preparedStatement.executeUpdate
+      } catch {
+        case e: Exception =>
+          exceptions += new DatasourceStatementException(e.getMessage, e)
       }
+      if(result < 0) {
+        exceptions += new DatasourceStatementException("Datasource statement returned a result of %s.".format(result.toString), null)
+      }
+      new DatasourceResult(List[DatasourceRow](), exceptions.toList)
     } finally {
       if (!connection.isClosed) connection.close()
     }
@@ -46,13 +53,19 @@ class Datasource(datasourceConfig: DatasourceConfig) {
       val preparedStatement: PreparedStatement = connection.prepareStatement(statement.sql)
       setParameters(preparedStatement, statement.parameters)
       val rows = ArrayBuffer[DatasourceRow]()
-      val resultSet: ResultSet = preparedStatement.executeQuery
-      val meta: ResultSetMetaData = resultSet.getMetaData
-      while (resultSet.next) {
-        rows += getRow(resultSet, meta)
+      val exceptions = ArrayBuffer[Exception]()
+      try {
+        val resultSet: ResultSet = preparedStatement.executeQuery
+        val meta: ResultSetMetaData = resultSet.getMetaData
+        while (resultSet.next) {
+          rows += getRow(resultSet, meta)
+        }
+        resultSet.close()
+      } catch {
+        case e: Exception =>
+          exceptions += new DatasourceStatementException(e.getMessage, e)
       }
-      resultSet.close()
-      new DatasourceResult(true, rows.toList)
+      new DatasourceResult(rows.toList, exceptions.toList)
     } finally {
       if (!connection.isClosed) connection.close()
     }
@@ -77,7 +90,7 @@ class Datasource(datasourceConfig: DatasourceConfig) {
       map.foreach { case (key, value) => result.put(key, value) }
     } catch {
       case e: Exception =>
-        throw new DatasourceException("Invalid Datasource URL.")
+        throw new DatasourceException("Invalid Datasource URL.", null)
     }
 
     result
@@ -112,20 +125,20 @@ class Datasource(datasourceConfig: DatasourceConfig) {
         val message = re.getMessage
         message match {
           case "java.lang.ClassNotFoundException: invalidClassName" =>
-            throw new DatasourceException("Invalid Datasource class name '%s'.".format(datasourceConfig.className))
+            throw new DatasourceException("Invalid Datasource class name '%s'.".format(datasourceConfig.className), re)
 
           case "maxPoolSize cannot be less than 1" =>
-            throw new DatasourceException("Invalid Datasource max connections '%s'. Cannot be less than 1.".format(datasourceConfig.maxConnections.toString))
+            throw new DatasourceException("Invalid Datasource max connections '%s'. Cannot be less than 1.".format(datasourceConfig.maxConnections.toString), re)
 
           case "connectionTimeout cannot be less than 250ms" =>
-            throw new DatasourceException("Invalid Datasource timeout '%s'. Cannot be less than 250ms.".format(datasourceConfig.timeout.toString))
+            throw new DatasourceException("Invalid Datasource timeout '%s'. Cannot be less than 250ms.".format(datasourceConfig.timeout.toString), re)
 
           case _ =>
-            throw new DatasourceException(re.getMessage)
+            throw new DatasourceException(re.getMessage, re)
         }
 
       case e: Exception =>
-        throw new DatasourceException(e.getMessage)
+        throw new DatasourceException(e.getMessage, e)
     }
   }
 
@@ -140,7 +153,7 @@ class Datasource(datasourceConfig: DatasourceConfig) {
           columnIndex,
           columnName,
           DataType.String,
-          value
+          value.toString
         )
       }
     }
@@ -150,6 +163,9 @@ class Datasource(datasourceConfig: DatasourceConfig) {
   private def setParameters(statement: PreparedStatement, parameters: List[DatasourceParameter]): Unit = {
     for (parameter <- parameters) {
       parameter.dataType match {
+        case DataType.Integer =>
+          statement.setInt(parameter.index, parameter.value.asInstanceOf[Int])
+
         case DataType.Object =>
           statement.setObject(parameter.index, parameter.value)
 

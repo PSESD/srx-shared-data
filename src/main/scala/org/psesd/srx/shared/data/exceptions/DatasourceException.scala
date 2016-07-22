@@ -6,6 +6,6 @@ package org.psesd.srx.shared.data.exceptions
   * @since 1.0
   * @author Stephen Pugmire (iTrellis, LLC)
   **/
-class DatasourceException(val description: String) extends Exception(
+class DatasourceException(val description: String, val innerException: Exception) extends Exception(
   description
 )

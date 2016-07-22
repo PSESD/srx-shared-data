@@ -5,18 +5,25 @@ import org.scalatest.FunSuite
 
 class DatasourceResultTests extends FunSuite {
 
-  test("valid parameter") {
-    val result = new DatasourceResult(true, List[DatasourceRow]())
+  test("valid result") {
+    val result = new DatasourceResult(List[DatasourceRow](), List[Exception]())
     assert(result.success)
     assert(result.rows.isEmpty)
+    assert(result.exceptions.isEmpty)
   }
 
   test("null rows") {
     val thrown = intercept[ArgumentNullException] {
-      new DatasourceResult(true, null)
+      new DatasourceResult(null, List[Exception]())
     }
     assert(thrown.getMessage.equals(ExceptionMessage.NotNull.format("rows parameter")))
+  }
 
+  test("null exceptions") {
+    val thrown = intercept[ArgumentNullException] {
+      new DatasourceResult(List[DatasourceRow](), null)
+    }
+    assert(thrown.getMessage.equals(ExceptionMessage.NotNull.format("exceptions parameter")))
   }
 
 }

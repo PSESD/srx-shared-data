@@ -6,6 +6,7 @@ object SrxSharedDataBuild extends Build {
   lazy val srxSharedCore = RootProject(uri("https://github.com/PSESD/srx-shared-core.git"))
 
   lazy val hikariVersion = "2.4.7"
+  lazy val postgresqlVersion = "9.4.1208"
   lazy val scalaTestVersion = "2.2.6"
 
   lazy val project = Project("srx-shared-data", file("."))
@@ -15,6 +16,7 @@ object SrxSharedDataBuild extends Build {
       scalaVersion := "2.11.8",
       libraryDependencies ++=Seq(
         "com.zaxxer" % "HikariCP" % hikariVersion,
+        "org.postgresql" % "postgresql" % postgresqlVersion,
         "org.scalatest" %% "scalatest" % scalaTestVersion % "test"
     )
   ).dependsOn(srxSharedCore)

@@ -2,8 +2,10 @@ package org.psesd.srx.shared.data
 
 import java.net.URI
 import java.sql._
+import java.util.UUID
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
+import org.psesd.srx.shared.core.exceptions.ArgumentNullException
 import org.psesd.srx.shared.core.sif.SifTimestamp
 import org.psesd.srx.shared.data.exceptions.{DatasourceException, DatasourceStatementException}
 
@@ -28,11 +30,11 @@ class Datasource(datasourceConfig: DatasourceConfig) {
   def execute(statement: DatasourceStatement): DatasourceResult = {
     val connection: Connection = dataSource.getConnection
     try {
-      val preparedStatement: PreparedStatement = connection.prepareStatement(statement.sql)
-      setParameters(preparedStatement, statement.parameters)
       var result: Int = 0
       val exceptions = ArrayBuffer[Exception]()
       try {
+        val preparedStatement: PreparedStatement = connection.prepareStatement(statement.sql)
+        setParameters(preparedStatement, statement.parameters)
         result = preparedStatement.executeUpdate
       } catch {
         case e: Exception =>
@@ -41,20 +43,36 @@ class Datasource(datasourceConfig: DatasourceConfig) {
       if(result < 0) {
         exceptions += new DatasourceStatementException("Datasource statement returned a result of %s.".format(result.toString), null)
       }
-      new DatasourceResult(List[DatasourceRow](), exceptions.toList)
+      new DatasourceResult(List[DataRow](), exceptions.toList)
     } finally {
       if (!connection.isClosed) connection.close()
+    }
+  }
+
+  def execute(sql: String, parameters: Any*): DatasourceResult = {
+    if(parameters != null && parameters.nonEmpty) {
+      val p = ArrayBuffer[DatasourceParameter]()
+      for (i <- parameters.indices) {
+        val value = parameters(i)
+        if (value == null) {
+          throw new ArgumentNullException("parameter %s".format((i + 1).toString))
+        }
+        p += DatasourceParameter(parameters(i))
+      }
+      execute(new DatasourceStatement(sql, Some(p.toList)))
+    } else {
+      execute(DatasourceStatement(sql))
     }
   }
 
   def get(statement: DatasourceStatement): DatasourceResult = {
     val connection: Connection = dataSource.getConnection
     try {
-      val preparedStatement: PreparedStatement = connection.prepareStatement(statement.sql)
-      setParameters(preparedStatement, statement.parameters)
-      val rows = ArrayBuffer[DatasourceRow]()
+      val rows = ArrayBuffer[DataRow]()
       val exceptions = ArrayBuffer[Exception]()
       try {
+        val preparedStatement: PreparedStatement = connection.prepareStatement(statement.sql)
+        setParameters(preparedStatement, statement.parameters)
         val resultSet: ResultSet = preparedStatement.executeQuery
         val meta: ResultSetMetaData = resultSet.getMetaData
         while (resultSet.next) {
@@ -68,6 +86,22 @@ class Datasource(datasourceConfig: DatasourceConfig) {
       new DatasourceResult(rows.toList, exceptions.toList)
     } finally {
       if (!connection.isClosed) connection.close()
+    }
+  }
+
+  def get(sql: String, parameters: Any*): DatasourceResult = {
+    if(parameters != null && parameters.nonEmpty) {
+      val p = ArrayBuffer[DatasourceParameter]()
+      for (i <- parameters.indices) {
+        val value = parameters(i)
+        if (value == null) {
+          throw new ArgumentNullException("parameter %s".format((i + 1).toString))
+        }
+        p += DatasourceParameter(parameters(i))
+      }
+      get(new DatasourceStatement(sql, Some(p.toList)))
+    } else {
+      get(DatasourceStatement(sql))
     }
   }
 
@@ -142,14 +176,14 @@ class Datasource(datasourceConfig: DatasourceConfig) {
     }
   }
 
-  private def getRow(resultSet: ResultSet, meta: ResultSetMetaData): DatasourceRow = {
-    val columns = ArrayBuffer[DatasourceColumn]()
+  private def getRow(resultSet: ResultSet, meta: ResultSetMetaData): DataRow = {
+    val columns = ArrayBuffer[DataColumn]()
     val columnCount = meta.getColumnCount
     for (columnIndex <- 1 to columnCount) {
       val columnName = meta.getColumnName(columnIndex)
       val value: Object = resultSet.getObject(columnName)
       if (value != null) {
-        columns += new DatasourceColumn(
+        columns += new DataColumn(
           columnIndex,
           columnName,
           DataType.String,
@@ -157,25 +191,28 @@ class Datasource(datasourceConfig: DatasourceConfig) {
         )
       }
     }
-    new DatasourceRow(columns.toList)
+    new DataRow(columns.toList)
   }
 
-  private def setParameters(statement: PreparedStatement, parameters: List[DatasourceParameter]): Unit = {
-    for (parameter <- parameters) {
-      parameter.dataType match {
-        case DataType.Integer =>
-          statement.setInt(parameter.index, parameter.value.asInstanceOf[Int])
+  private def setParameters(statement: PreparedStatement, parameters: Option[List[DatasourceParameter]]): Unit = {
+    if(parameters.isDefined) {
+      for (parameter <- parameters.get) {
+        parameter.dataType match {
 
-        case DataType.Object =>
-          statement.setObject(parameter.index, parameter.value)
+          case DataType.Integer =>
+            statement.setInt(parameter.index, parameter.value.asInstanceOf[Int])
 
-        case DataType.String =>
-          statement.setString(parameter.index, parameter.value.asInstanceOf[String])
+          case DataType.String =>
+            statement.setString(parameter.index, parameter.value.asInstanceOf[String])
 
-        case DataType.Timestamp =>
-          statement.setTimestamp(parameter.index, new Timestamp(parameter.value.asInstanceOf[SifTimestamp].getMilliseconds))
+          case DataType.Timestamp =>
+            statement.setTimestamp(parameter.index, new Timestamp(parameter.value.asInstanceOf[SifTimestamp].getMilliseconds))
 
-        case _ =>
+          case DataType.Uuid =>
+            statement.setObject(parameter.index, parameter.value.asInstanceOf[UUID])
+
+          case _ =>
+        }
       }
     }
   }

@@ -9,7 +9,7 @@ package org.psesd.srx.shared.data
 object DataType extends Enumeration {
   type DataType = Value
   val Integer = Value("integer")
-  val Object = Value("object")
   val String = Value("string")
   val Timestamp = Value("timestamp")
+  val Uuid = Value("uuid")
 }

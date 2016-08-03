@@ -1,15 +1,39 @@
 package org.psesd.srx.shared.data
 
-import org.psesd.srx.shared.core.exceptions.{ArgumentNullException, ArgumentNullOrEmptyOrWhitespaceException, ExceptionMessage}
+import org.psesd.srx.shared.core.exceptions.{ArgumentNullException, ExceptionMessage}
 import org.psesd.srx.shared.data.exceptions.DatasourceParameterException
 import org.scalatest.FunSuite
 
 class DatasourceParameterTests extends FunSuite {
 
-  test("valid parameter") {
+  test("default constructor") {
     val parameter = new DatasourceParameter(1, "name", DataType.String, "value")
     assert(parameter.index.equals(1))
     assert(parameter.name.equals("name"))
+    assert(parameter.dataType.equals(DataType.String))
+    assert(parameter.value.equals("value"))
+  }
+
+  test("factory constructor") {
+    val parameter = DatasourceParameter(1, "name", DataType.String, "value")
+    assert(parameter.index.equals(1))
+    assert(parameter.name.equals("name"))
+    assert(parameter.dataType.equals(DataType.String))
+    assert(parameter.value.equals("value"))
+  }
+
+  test("name/value constructor") {
+    val parameter = DatasourceParameter("name", "value")
+    assert(parameter.index.equals(0))
+    assert(parameter.name.equals("name"))
+    assert(parameter.dataType.equals(DataType.String))
+    assert(parameter.value.equals("value"))
+  }
+
+  test("value constructor") {
+    val parameter = DatasourceParameter("value")
+    assert(parameter.index.equals(0))
+    assert(parameter.name == null)
     assert(parameter.dataType.equals(DataType.String))
     assert(parameter.value.equals("value"))
   }
@@ -19,10 +43,8 @@ class DatasourceParameterTests extends FunSuite {
     "whitespace" -> "   ").foreach { case (key, value) =>
 
     test(s"$key name") {
-      val thrown = intercept[ArgumentNullOrEmptyOrWhitespaceException] {
-        new DatasourceParameter(1, value, DataType.String, "value")
-      }
-      assert(thrown.getMessage.equals(ExceptionMessage.NotNullOrEmptyOrWhitespace.format("name parameter")))
+      val parameter = new DatasourceParameter(1, value, DataType.String, "value")
+      assert(parameter.value.equals("value"))
     }
   }
 
@@ -35,7 +57,7 @@ class DatasourceParameterTests extends FunSuite {
 
   test("null value") {
     val thrown = intercept[ArgumentNullException] {
-      new DatasourceParameter(1, "name", DataType.Object, null)
+      new DatasourceParameter(1, "name", DataType.Uuid, null)
     }
     assert(thrown.getMessage.equals(ExceptionMessage.NotNull.format("value parameter")))
   }

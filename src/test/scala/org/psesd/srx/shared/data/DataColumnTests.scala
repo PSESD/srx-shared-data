@@ -3,10 +3,10 @@ package org.psesd.srx.shared.data
 import org.psesd.srx.shared.core.exceptions.{ArgumentNullException, ArgumentNullOrEmptyOrWhitespaceException, ExceptionMessage}
 import org.scalatest.FunSuite
 
-class DatasourceColumnTests extends FunSuite {
+class DataColumnTests extends FunSuite {
 
   test("valid parameter") {
-    val parameter = new DatasourceParameter(1, "name", DataType.String, "value")
+    val parameter = new DataColumn(1, "name", DataType.String, "value")
     assert(parameter.index.equals(1))
     assert(parameter.name.equals("name"))
     assert(parameter.dataType.equals(DataType.String))
@@ -19,7 +19,7 @@ class DatasourceColumnTests extends FunSuite {
 
     test(s"$key name") {
       val thrown = intercept[ArgumentNullOrEmptyOrWhitespaceException] {
-        new DatasourceParameter(1, value, DataType.String, "value")
+        new DataColumn(1, value, DataType.String, "value")
       }
       assert(thrown.getMessage.equals(ExceptionMessage.NotNullOrEmptyOrWhitespace.format("name parameter")))
 
@@ -28,7 +28,7 @@ class DatasourceColumnTests extends FunSuite {
 
   test("null dataType") {
     val thrown = intercept[ArgumentNullException] {
-      new DatasourceParameter(1, "name", null, "value")
+      new DataColumn(1, "name", null, "value")
     }
     assert(thrown.getMessage.equals(ExceptionMessage.NotNull.format("dataType parameter")))
 
@@ -36,7 +36,7 @@ class DatasourceColumnTests extends FunSuite {
 
   test("null value") {
     val thrown = intercept[ArgumentNullException] {
-      new DatasourceParameter(1, "name", DataType.Object, null)
+      new DataColumn(1, "name", DataType.Uuid, null)
     }
     assert(thrown.getMessage.equals(ExceptionMessage.NotNull.format("value parameter")))
 

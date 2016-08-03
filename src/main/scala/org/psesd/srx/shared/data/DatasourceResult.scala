@@ -8,7 +8,7 @@ import org.psesd.srx.shared.core.exceptions.ArgumentNullException
   * @since 1.0
   * @author Stephen Pugmire (iTrellis, LLC)
   **/
-class DatasourceResult(val rows: List[DatasourceRow], val exceptions: List[Exception]) {
+class DatasourceResult(val rows: List[DataRow], val exceptions: List[Exception]) {
   if (rows == null) {
     throw new ArgumentNullException("rows parameter")
   }

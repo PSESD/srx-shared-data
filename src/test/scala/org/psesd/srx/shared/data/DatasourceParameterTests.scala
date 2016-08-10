@@ -56,10 +56,10 @@ class DatasourceParameterTests extends FunSuite {
   }
 
   test("null value") {
-    val thrown = intercept[ArgumentNullException] {
+    val thrown = intercept[DatasourceParameterException] {
       new DatasourceParameter(1, "name", DataType.Uuid, null)
     }
-    assert(thrown.getMessage.equals(ExceptionMessage.NotNull.format("value parameter")))
+    assert(thrown.getMessage.equals("Datasource parameter 'name' of type 'uuid' contains invalid value NULL."))
   }
 
   test("invalid integer") {

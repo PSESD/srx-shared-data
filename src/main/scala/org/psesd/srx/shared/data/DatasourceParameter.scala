@@ -17,9 +17,6 @@ class DatasourceParameter(var index: Int, val name: String, val dataType: DataTy
   if (dataType == null) {
     throw new ArgumentNullException("dataType parameter")
   }
-  if (value == null) {
-    throw new ArgumentNullException("value parameter")
-  }
   validate()
 
   private def validate(): Unit = {
@@ -29,11 +26,20 @@ class DatasourceParameter(var index: Int, val name: String, val dataType: DataTy
         case DataType.Integer =>
           value.asInstanceOf[Int]
 
+        case DataType.Null =>
+          if(!(value == null || value == None)) {
+            throw new DatasourceParameterException("Parameter value is not null.", null)
+          }
+
         case DataType.String =>
-          value match {
-            case s: String =>
-            case _ =>
-              throw new DatasourceParameterException("Parameter value is not a String.", null)
+          if(value == null || value == None) {
+            throw new DatasourceParameterException("Parameter value is not a String.", null)
+          } else {
+            value match {
+              case s: String =>
+              case _ =>
+                throw new DatasourceParameterException("Parameter value is not a String.", null)
+            }
           }
 
         case DataType.Timestamp =>
@@ -54,7 +60,15 @@ class DatasourceParameter(var index: Int, val name: String, val dataType: DataTy
       }
     } catch {
       case e: Exception =>
-        throw new DatasourceParameterException("Datasource parameter '%s' of type '%s' contains invalid value '%s'.".format(name, dataType.toString, value.toString), e)
+        throw new DatasourceParameterException("Datasource parameter '%s' of type '%s' contains invalid value %s.".format(
+          name,
+          dataType.toString,
+          if(value == null || value == None) {
+            "NULL"
+          } else {
+            "'" + value.toString + "'"
+          }
+        ), e)
     }
   }
 }
@@ -82,7 +96,11 @@ object DatasourceParameter {
       case _: SifTimestamp => DataType.Timestamp
       case _: UUID => DataType.Uuid
       case _ =>
-        throw new DatasourceParameterException("Unknown data type for parameter value '%s'".format(value.toString), null)
+        if(value == null || value == None) {
+          DataType.Null
+        } else {
+          throw new DatasourceParameterException("Unknown data type for parameter value '%s'".format(value.toString), null)
+        }
     }
     new DatasourceParameter(0, null, dataType, value)
   }

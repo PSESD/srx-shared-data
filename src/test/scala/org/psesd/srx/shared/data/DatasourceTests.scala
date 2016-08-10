@@ -91,35 +91,39 @@ class DatasourceTests extends FunSuite {
     val schemaResult = datasource.execute("create schema if not exists srx_shared_data;")
     assert(schemaResult.success)
 
-    val createResult = datasource.execute("create table srx_shared_data.testTable (id integer, uniqueId uuid, createdOn timestamp, stringValue text);")
+    val createResult = datasource.execute("create table srx_shared_data.testTable (id integer, uniqueId uuid, createdOn timestamp, stringValue text, nullValue text);")
     assert(createResult.success)
 
     val insertOneResult = datasource.execute(
-      "insert into srx_shared_data.testTable (id, uniqueId, createdOn, stringValue) values (?, ?, ?, ?);",
+      "insert into srx_shared_data.testTable (id, uniqueId, createdOn, stringValue, nullValue) values (?, ?, ?, ?, ?);",
       id,
       uniqueId,
       createdOn,
-      stringValue
+      stringValue,
+      null
     )
     assert(insertOneResult.success)
 
     val insertManyResult = datasource.execute(
-      "insert into srx_shared_data.testTable (id, uniqueId, createdOn, stringValue) values (?, ?, ?, ?), (?, ?, ?, ?);",
+      "insert into srx_shared_data.testTable (id, uniqueId, createdOn, stringValue, nullValue) values (?, ?, ?, ?, ?), (?, ?, ?, ?, ?);",
       2,
       UUID.randomUUID(),
       SifTimestamp(),
       "string2",
+      null,
       3,
       UUID.randomUUID(),
       SifTimestamp(),
-      "string3"
+      "string3",
+      None
     )
     assert(insertManyResult.success)
 
-    val select1Result = datasource.get("select id, uniqueId, createdOn, stringValue from srx_shared_data.testTable order by id;")
+    val select1Result = datasource.get("select id, uniqueId, createdOn, stringValue, nullValue from srx_shared_data.testTable order by id;")
     assert(select1Result.success)
     assert(select1Result.rows.length.equals(3))
     assert(select1Result.rows.head.columns(3).value.equals(stringValue))
+    assert(select1Result.rows.head.columns(4).value == null)
 
     val updateResult = datasource.execute(
       "update srx_shared_data.testTable set stringValue = ? where id = 1;",

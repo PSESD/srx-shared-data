@@ -25,10 +25,10 @@ class DatasourceStatementTests extends FunSuite {
   }
 
   test("null params constructor") {
-    val thrown = intercept[ArgumentNullException] {
-      DatasourceStatement("select * from *", null)
-    }
-    assert(thrown.getMessage.equals(ExceptionMessage.NotNull.format("parameter 1")))
+    val statement = DatasourceStatement("select * from *", null)
+    assert(statement.sql.equals("select * from *"))
+    assert(statement.parameters.get(0).dataType.equals(DataType.Null))
+    assert(statement.parameters.get(0).value == null)
   }
 
   Map("null" -> null,

@@ -10,7 +10,7 @@ import scala.collection.mutable.ArrayBuffer
   * @version 1.0
   * @since 1.0
   * @author Stephen Pugmire (iTrellis, LLC)
-  **/
+  * */
 class DatasourceStatement(val sql: String, val parameters: Option[List[DatasourceParameter]]) {
   if (sql.isNullOrEmpty) {
     throw new ArgumentNullOrEmptyOrWhitespaceException("sql parameter")
@@ -39,10 +39,6 @@ object DatasourceStatement {
     } else {
       val p = ArrayBuffer[DatasourceParameter]()
       for (i <- parameters.indices) {
-        val value = parameters(i)
-        if (value == null) {
-          throw new ArgumentNullException("parameter %s".format((i + 1).toString))
-        }
         p += DatasourceParameter(parameters(i))
       }
       new DatasourceStatement(sql, Some(p.toList))

@@ -88,6 +88,12 @@ class DatasourceTests extends FunSuite {
 
     val datasource = new Datasource(TestValues.datasourceConfig)
 
+    val cleanTableResult = datasource.execute("drop table if exists srx_shared_data.testTable;")
+    assert(cleanTableResult.success)
+
+    val cleanSchemaResult = datasource.execute("drop schema if exists srx_shared_data;")
+    assert(cleanSchemaResult.success)
+
     val schemaResult = datasource.execute("create schema if not exists srx_shared_data;")
     assert(schemaResult.success)
 
@@ -119,11 +125,13 @@ class DatasourceTests extends FunSuite {
     )
     assert(insertManyResult.success)
 
-    val select1Result = datasource.get("select id, uniqueId, createdOn, stringValue, nullValue from srx_shared_data.testTable order by id;")
+    val select1Result = datasource.get("select * from srx_shared_data.testTable order by id;")
     assert(select1Result.success)
     assert(select1Result.rows.length.equals(3))
-    assert(select1Result.rows.head.columns(3).value.equals(stringValue))
-    assert(select1Result.rows.head.columns(4).value == null)
+    assert(select1Result.rows.head.getUuid("uniqueId").get.toString.equals(uniqueId.toString))
+    assert(select1Result.rows.head.getTimestamp("createdOn").get.toString.equals(createdOn.toString))
+    assert(select1Result.rows.head.getString("stringValue").get.equals(stringValue))
+    assert(select1Result.rows.head.getString("nullValue").isEmpty)
 
     val updateResult = datasource.execute(
       "update srx_shared_data.testTable set stringValue = ? where id = 1;",
@@ -137,7 +145,7 @@ class DatasourceTests extends FunSuite {
     )
     assert(select2Result.success)
     assert(select2Result.rows.length.equals(1))
-    assert(select2Result.rows.head.columns.head.value.equals("string1 UPDATED"))
+    assert(select2Result.rows.head.getString(1).get.equals("string1 UPDATED"))
 
     val dropResult = datasource.execute("drop table srx_shared_data.testTable;")
     assert(dropResult.success)

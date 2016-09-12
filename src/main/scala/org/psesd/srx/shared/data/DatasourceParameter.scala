@@ -1,5 +1,6 @@
 package org.psesd.srx.shared.data
 
+import java.sql.Date
 import java.util.UUID
 
 import org.psesd.srx.shared.core.exceptions.ArgumentNullException
@@ -22,6 +23,13 @@ class DatasourceParameter(var index: Int, val name: String, val dataType: DataTy
   private def validate(): Unit = {
     try {
       dataType match {
+
+        case DataType.Date =>
+          value match {
+            case s: Date =>
+            case _ =>
+              throw new DatasourceParameterException("Parameter value is not a Date.", null)
+          }
 
         case DataType.Integer =>
           value.asInstanceOf[Int]
@@ -79,6 +87,7 @@ object DatasourceParameter {
 
   def apply(name: String, value: Any): DatasourceParameter = {
     val dataType: DataType = value match {
+      case _: Date => DataType.Date
       case _: Int => DataType.Integer
       case _: String => DataType.String
       case _: SifTimestamp => DataType.Timestamp
@@ -91,6 +100,7 @@ object DatasourceParameter {
 
   def apply(value: Any): DatasourceParameter = {
     val dataType: DataType = value match {
+      case _: Date => DataType.Date
       case _: Int => DataType.Integer
       case _: String => DataType.String
       case _: SifTimestamp => DataType.Timestamp

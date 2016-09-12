@@ -1,5 +1,6 @@
 package org.psesd.srx.shared.data
 
+import java.sql.Date
 import java.util.UUID
 
 import org.joda.time.DateTime
@@ -24,6 +25,24 @@ class DataRow(val columns: List[DataColumn]) {
 
   def getColumn(name: String): Option[DataColumn] = {
     columns.find(c => c.name.toLowerCase == name.toLowerCase)
+  }
+
+  def getDate(index: Int): Option[Date] = {
+    val value = getValue(index)
+    if (value.isDefined) {
+      Some(Date.valueOf(value.get.asInstanceOf[String]))
+    } else {
+      None
+    }
+  }
+
+  def getDate(name: String): Option[Date] = {
+    val value = getValue(name)
+    if (value.isDefined) {
+      Some(Date.valueOf(value.get.asInstanceOf[String]))
+    } else {
+      None
+    }
   }
 
   def getString(index: Int): Option[String] = {

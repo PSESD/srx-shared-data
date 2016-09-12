@@ -105,6 +105,9 @@ class Datasource(datasourceConfig: DatasourceConfig) {
       for (parameter <- parameters.get) {
         parameter.dataType match {
 
+          case DataType.Date =>
+            statement.setDate(parameter.index, parameter.value.asInstanceOf[Date])
+
           case DataType.Integer =>
             statement.setInt(parameter.index, parameter.value.asInstanceOf[Int])
 

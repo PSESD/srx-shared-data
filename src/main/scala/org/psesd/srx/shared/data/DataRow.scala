@@ -8,6 +8,8 @@ import org.joda.time.format.DateTimeFormat
 import org.psesd.srx.shared.core.exceptions.ArgumentNullException
 import org.psesd.srx.shared.core.sif.SifTimestamp
 
+import scala.util.Try
+
 /** Datasource get result row.
   *
   * @version 1.0
@@ -25,6 +27,24 @@ class DataRow(val columns: List[DataColumn]) {
 
   def getColumn(name: String): Option[DataColumn] = {
     columns.find(c => c.name.toLowerCase == name.toLowerCase)
+  }
+
+  def getBoolean(index: Int): Option[Boolean] = {
+    val value = getValue(index)
+    if (value.isDefined) {
+      Some(Try(value.get.asInstanceOf[String].toBoolean).getOrElse(false))
+    } else {
+      None
+    }
+  }
+
+  def getBoolean(name: String): Option[Boolean] = {
+    val value = getValue(name)
+    if (value.isDefined) {
+      Some(Try(value.get.asInstanceOf[String].toBoolean).getOrElse(false))
+    } else {
+      None
+    }
   }
 
   def getDate(index: Int): Option[Date] = {

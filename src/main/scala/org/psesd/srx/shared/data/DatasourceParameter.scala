@@ -24,9 +24,16 @@ class DatasourceParameter(var index: Int, val name: String, val dataType: DataTy
     try {
       dataType match {
 
+        case DataType.Boolean =>
+          value match {
+            case b: Boolean =>
+            case _ =>
+              throw new DatasourceParameterException("Parameter value is not a Boolean.", null)
+          }
+
         case DataType.Date =>
           value match {
-            case s: Date =>
+            case d: Date =>
             case _ =>
               throw new DatasourceParameterException("Parameter value is not a Date.", null)
           }
@@ -87,6 +94,7 @@ object DatasourceParameter {
 
   def apply(name: String, value: Any): DatasourceParameter = {
     val dataType: DataType = value match {
+      case _: Boolean => DataType.Boolean
       case _: Date => DataType.Date
       case _: Int => DataType.Integer
       case _: String => DataType.String
@@ -100,6 +108,7 @@ object DatasourceParameter {
 
   def apply(value: Any): DatasourceParameter = {
     val dataType: DataType = value match {
+      case _: Boolean => DataType.Boolean
       case _: Date => DataType.Date
       case _: Int => DataType.Integer
       case _: String => DataType.String

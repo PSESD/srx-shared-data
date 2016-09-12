@@ -84,6 +84,7 @@ class DatasourceTests extends FunSuite {
   test("test table CRUD operations") {
     val id = 1
     val uniqueId = UUID.randomUUID()
+    val isActive = true
     val createdDate = Date.valueOf("2016-01-01")
     val createdOn = SifTimestamp()
     val stringValue = "string1"
@@ -99,13 +100,14 @@ class DatasourceTests extends FunSuite {
     val schemaResult = datasource.execute("create schema if not exists srx_shared_data;")
     assert(schemaResult.success)
 
-    val createResult = datasource.execute("create table srx_shared_data.testTable (id integer, uniqueId uuid, createdDate date, createdOn timestamp, stringValue text, nullValue text);")
+    val createResult = datasource.execute("create table srx_shared_data.testTable (id integer, uniqueId uuid, isActive boolean, createdDate date, createdOn timestamp, stringValue text, nullValue text);")
     assert(createResult.success)
 
     val insertOneResult = datasource.execute(
-      "insert into srx_shared_data.testTable (id, uniqueId, createdDate, createdOn, stringValue, nullValue) values (?, ?, ?, ?, ?, ?);",
+      "insert into srx_shared_data.testTable (id, uniqueId, isActive, createdDate, createdOn, stringValue, nullValue) values (?, ?, ?, ?, ?, ?, ?);",
       id,
       uniqueId,
+      isActive,
       createdDate,
       createdOn,
       stringValue,
@@ -114,15 +116,17 @@ class DatasourceTests extends FunSuite {
     assert(insertOneResult.success)
 
     val insertManyResult = datasource.execute(
-      "insert into srx_shared_data.testTable (id, uniqueId, createdDate, createdOn, stringValue, nullValue) values (?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?);",
+      "insert into srx_shared_data.testTable (id, uniqueId, isActive, createdDate, createdOn, stringValue, nullValue) values (?, ?, ?, ?, ?, ?, ?), (?, ?, ?, ?, ?, ?, ?);",
       2,
       UUID.randomUUID(),
+      true,
       createdOn,
       SifTimestamp(),
       "string2",
       null,
       3,
       UUID.randomUUID(),
+      false,
       createdOn,
       SifTimestamp(),
       "string3",
@@ -134,6 +138,7 @@ class DatasourceTests extends FunSuite {
     assert(select1Result.success)
     assert(select1Result.rows.length.equals(3))
     assert(select1Result.rows.head.getUuid("uniqueId").get.toString.equals(uniqueId.toString))
+    assert(select1Result.rows.head.getBoolean("isActive").get.toString.equals(isActive.toString))
     assert(select1Result.rows.head.getDate("createdDate").get.toString.equals(createdDate.toString))
     assert(select1Result.rows.head.getTimestamp("createdOn").get.toString.equals(createdOn.toString))
     assert(select1Result.rows.head.getString("stringValue").get.equals(stringValue))

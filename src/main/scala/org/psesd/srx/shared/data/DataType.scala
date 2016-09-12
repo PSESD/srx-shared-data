@@ -8,6 +8,7 @@ package org.psesd.srx.shared.data
   **/
 object DataType extends Enumeration {
   type DataType = Value
+  val Boolean = Value("boolean")
   val Date = Value("date")
   val Integer = Value("integer")
   val Null = Value("null")

@@ -100,6 +100,40 @@ class Datasource(datasourceConfig: DatasourceConfig) {
     }
   }
 
+  def executeNoReturn(sql: String, parameters: Any*): DatasourceResult = {
+    if (parameters != null && parameters.nonEmpty) {
+      val p = ArrayBuffer[DatasourceParameter]()
+      for (i <- parameters.indices) {
+        p += DatasourceParameter(parameters(i))
+      }
+      executeNoReturn(new DatasourceStatement(sql, Some(p.toList)))
+    } else {
+      executeNoReturn(DatasourceStatement(sql))
+    }
+  }
+
+  def executeNoReturn(statement: DatasourceStatement): DatasourceResult = {
+    val connection: Connection = dataSource.getConnection
+    try {
+      var success: Boolean = false
+      val exceptions = ArrayBuffer[Exception]()
+      try {
+        val callableStatement: CallableStatement = connection.prepareCall(statement.sql)
+        setParameters(callableStatement, statement.parameters)
+        success = callableStatement.execute()
+      } catch {
+        case e: Exception =>
+          exceptions += new DatasourceStatementException(e.getMessage, e)
+      }
+      if (!success) {
+        exceptions += new DatasourceStatementException("Datasource statement returned a result of %s.".format(success.toString), null)
+      }
+      new DatasourceResult(None, List[DataRow](), exceptions.toList)
+    } finally {
+      if (!connection.isClosed) connection.close()
+    }
+  }
+
   private def setParameters(statement: PreparedStatement, parameters: Option[List[DatasourceParameter]]): Unit = {
     if (parameters.isDefined) {
       for (parameter <- parameters.get) {

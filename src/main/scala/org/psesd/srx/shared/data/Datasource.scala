@@ -6,7 +6,7 @@ import java.util.UUID
 
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import org.psesd.srx.shared.core.sif.SifTimestamp
-import org.psesd.srx.shared.data.exceptions.{DatasourceException, DatasourceStatementException}
+import org.psesd.srx.shared.data.exceptions.{DatasourceDuplicateViolationException, DatasourceException, DatasourceStatementException}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -58,7 +58,11 @@ class Datasource(datasourceConfig: DatasourceConfig) {
         }
       } catch {
         case e: Exception =>
-          exceptions += new DatasourceStatementException(e.getMessage, e)
+          if (isDuplicateViolation(e)) {
+            exceptions += new DatasourceDuplicateViolationException(e.getMessage, e)
+          } else {
+            exceptions += new DatasourceStatementException(e.getMessage, e)
+          }
       }
       new DatasourceResult(id, rows.toList, exceptions.toList)
     } finally {
@@ -89,7 +93,11 @@ class Datasource(datasourceConfig: DatasourceConfig) {
         result = preparedStatement.executeUpdate
       } catch {
         case e: Exception =>
-          exceptions += new DatasourceStatementException(e.getMessage, e)
+          if (isDuplicateViolation(e)) {
+            exceptions += new DatasourceDuplicateViolationException(e.getMessage, e)
+          } else {
+            exceptions += new DatasourceStatementException(e.getMessage, e)
+          }
       }
       if (result < 0) {
         exceptions += new DatasourceStatementException("Datasource statement returned a result of %s.".format(result.toString), null)
@@ -301,4 +309,7 @@ class Datasource(datasourceConfig: DatasourceConfig) {
     result
   }
 
+  def isDuplicateViolation(e: Exception): Boolean = {
+    e.getMessage.toLowerCase.contains("duplicate key value violates unique constraint")
+  }
 }

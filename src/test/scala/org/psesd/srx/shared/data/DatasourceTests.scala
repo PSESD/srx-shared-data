@@ -4,7 +4,7 @@ import java.sql.Date
 import java.util.UUID
 
 import org.psesd.srx.shared.core.sif.SifTimestamp
-import org.psesd.srx.shared.data.exceptions.DatasourceException
+import org.psesd.srx.shared.data.exceptions.{DatasourceDuplicateViolationException, DatasourceException}
 import org.scalatest.FunSuite
 
 class DatasourceTests extends FunSuite {
@@ -100,7 +100,7 @@ class DatasourceTests extends FunSuite {
     val schemaResult = datasource.execute("create schema if not exists srx_shared_data;")
     assert(schemaResult.success)
 
-    val createResult = datasource.execute("create table srx_shared_data.testTable (id integer, uniqueId uuid, isActive boolean, createdDate date, createdOn timestamp, stringValue text, nullValue text);")
+    val createResult = datasource.execute("create table srx_shared_data.testTable (id integer, uniqueId uuid, isActive boolean, createdDate date, createdOn timestamp, stringValue text unique, nullValue text);")
     assert(createResult.success)
 
     val insertOneResult = datasource.execute(
@@ -133,6 +133,19 @@ class DatasourceTests extends FunSuite {
       None
     )
     assert(insertManyResult.success)
+
+    val insertDuplicateResult = datasource.execute(
+      "insert into srx_shared_data.testTable (id, uniqueId, isActive, createdDate, createdOn, stringValue, nullValue) values (?, ?, ?, ?, ?, ?, ?);",
+      id,
+      uniqueId,
+      isActive,
+      createdDate,
+      createdOn,
+      stringValue,
+      null
+    )
+    assert(!insertDuplicateResult.success)
+    assert(insertDuplicateResult.exceptions.head.isInstanceOf[DatasourceDuplicateViolationException])
 
     val select1Result = datasource.get("select * from srx_shared_data.testTable order by id;")
     assert(select1Result.success)

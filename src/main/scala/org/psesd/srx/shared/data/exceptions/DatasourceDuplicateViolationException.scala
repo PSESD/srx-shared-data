@@ -6,7 +6,6 @@ package org.psesd.srx.shared.data.exceptions
   * @since 1.0
   * @author Margarett Ly (iTrellis, LLC)
   **/
-
-class DatasourceDuplicateViolationException(val description: String, val innerException: Exception) extends Exception {
+class DatasourceDuplicateViolationException(val description: String, val innerException: Exception) extends Exception(
   description
-}
+)
